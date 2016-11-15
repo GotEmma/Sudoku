@@ -15,57 +15,44 @@ main = do
 data Sudoku = Sudoku { rows :: [[Maybe Int]] }
  deriving ( Show, Eq )
 
--- allBlankSudoku is a sudoku with just blanks
+-- | allBlankSudoku is a sudoku with just blanks.
 allBlankSudoku :: Sudoku
 allBlankSudoku = Sudoku (replicate 9 (replicate 9 Nothing))
 
--- isSudoku sud checks if sud is really a valid representation of a sudoku
--- puzzle
+-- | isSudoku sud checks if sudoku is really a valid representation of a sudoku
+-- | puzzle.
 isSudoku :: Sudoku -> Bool
 isSudoku sudoku = (length (rows sudoku) == 9) &&
                   (all (\x -> length x == 9) (rows sudoku)) &&
                   (areElementsValid sudoku)
 
+-- Help function for isSudoku. Checks if the elements are 1-9 or blank.
 areElementsValid :: Sudoku -> Bool
-areElementsValid sudoku = all (\x -> (all (\y ->
-                          (y == Nothing)||
-                          (y == Just 1) ||
-                          (y == Just 2) ||
-                          (y == Just 3) ||
-                          (y == Just 4) ||
-                          (y == Just 5) ||
-                          (y == Just 6) ||
-                          (y == Just 7) ||
-                          (y == Just 8) ||
-                          (y == Just 9)) (x))) (rows sudoku)
+areElementsValid sudoku = all (\x -> ( all (\y -> (
+                          case y of
+                            Just n -> n `elem` [1..9]
+                            Nothing -> True )) (x) )) (rows sudoku)
 
--- isSolved sud checks if sud is already solved, i.e. there are no blanks
+-- | isSolved sudoku checks if sud is already solved, i.e. there are no blanks.
 isSolved :: Sudoku -> Bool
-isSolved sudoku = not (any (\x -> (any (\y -> y == Nothing) (x))) (rows sudoku))
+isSolved sudoku = not (any (\x -> (
+                  any (\y -> y == Nothing) (x))) (rows sudoku))
 
 -------------------------------------------------------------------------
 
--- printSudoku sud prints a representation of the sudoku sud on the screen
+-- | printSudoku sud prints a representation of the sudoku sud on the screen.
 printSudoku :: Sudoku -> IO ()
-printSudoku sudoku = putStrLn (innerList (rows sudoku))
+printSudoku sud = putStrLn (maybeMatrixToString (rows sud))
 
-innerList :: [[Maybe Int]] -> String
-innerList list = unlines (map (listToString) (list))
+maybeMatrixToString :: [[Maybe Int]] -> String
+maybeMatrixToString matrix = unlines (map maybeListToString matrix)
 
-listToString :: [Maybe Int] -> String
-listToString list = map convertToChar list
+maybeListToString :: [Maybe Int] -> String
+maybeListToString list = map maybeToChar list
 
-convertToChar :: Maybe Int -> Char
-convertToChar input | input == Just 1 = chr 49
-                    | input == Just 2 = chr 50
-                    | input == Just 3 = chr 51
-                    | input == Just 4 = chr 52
-                    | input == Just 5 = chr 53
-                    | input == Just 6 = chr 54
-                    | input == Just 7 = chr 55
-                    | input == Just 8 = chr 56
-                    | input == Just 9 = chr 57
-                    | input == Nothing = chr 46
+maybeToChar :: Maybe Int -> Char
+maybeToChar (Just n) = chr (ord '0' + n)
+maybeToChar Nothing = chr (ord '.')
 
 -- readSudoku file reads from the file, and either delivers it, or stops
 -- if the file did not contain a sudoku
@@ -120,8 +107,6 @@ blocks = undefined
 
 isOkay :: Sudoku -> Bool
 isOkay = undefined-}
-
-
 
 -------------------------------------------------------------------------
 example :: Sudoku
