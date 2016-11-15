@@ -72,9 +72,9 @@ convertToChar input | input == Just 1 = chr 49
 readSudoku :: FilePath -> IO Sudoku
 readSudoku file = do
                     contents <- readFile file
-                    return (Sudoku (stringListToMatrix (lines contents)))
-
--- | not (isSudoku (readFile file)) = error "File does not contain a Sudoku"
+                    if isSudoku (Sudoku (stringListToMatrix (lines contents)))
+                    then return (Sudoku (stringListToMatrix (lines contents)))
+                    else error "File does not contain a Sudoku"
 
 convertToInt :: Char -> Maybe Int
 convertToInt input  | input == chr 49 = Just 1
@@ -101,8 +101,7 @@ stringToList string = map convertToInt string
 
 -- cell generates an arbitrary cell in a Sudoku
 cell :: Gen (Maybe Int)
-cell = do
-        return (choose (Just 1, Just 9))
+cell = undefined
 
 -- an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
@@ -110,7 +109,7 @@ instance Arbitrary Sudoku where
     do rows <- sequence [ sequence [ cell | j <- [1..9] ] | i <- [1..9] ]
        return (Sudoku rows)
 
-prop_Sudoku :: Sudoku -> Bool
+{-prop_Sudoku :: Sudoku -> Bool
 prop_Sudoku = undefined
 
 isOkayBlock :: Block -> Bool
@@ -120,7 +119,7 @@ blocks :: Sudoku -> [Block]
 blocks = undefined
 
 isOkay :: Sudoku -> Bool
-isOkay = undefined
+isOkay = undefined-}
 
 
 
