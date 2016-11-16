@@ -98,17 +98,22 @@ instance Arbitrary Sudoku where
     do rows <- sequence [ sequence [ cell | j <- [1..9] ] | i <- [1..9] ]
        return (Sudoku rows)
 
+type Block = [Maybe Int]
+
+isOkayBlock :: Block -> Bool
+isOkayBlock (x:[]) = True
+isOkayBlock (x:xs) = if any (\y -> y == x) xs
+                     then False
+                     else isOkayBlock xs
+
 prop_Sudoku :: Sudoku -> Bool
 prop_Sudoku sudoku = isSudoku sudoku
-
-{-isOkayBlock :: Block -> Bool
-isOkayBlock = undefined
 
 blocks :: Sudoku -> [Block]
 blocks = undefined
 
 isOkay :: Sudoku -> Bool
-isOkay = undefined-}
+isOkay = undefined
 
 -------------------------------------------------------------------------
 example :: Sudoku
