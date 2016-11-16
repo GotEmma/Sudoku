@@ -88,7 +88,7 @@ stringToList string = map convertToInt string
 
 -- cell generates an arbitrary cell in a Sudoku
 cell :: Gen (Maybe Int)
-cell = frequency [(1, return Nothing), (9, do elements maybeInts)]
+cell = frequency [(9, return Nothing), (1, do elements maybeInts)]
 
 maybeInts = [Just 1, Just 2, Just 3, Just 4, Just 5, Just 6, Just 7, Just 8, Just 9]
 
@@ -98,10 +98,10 @@ instance Arbitrary Sudoku where
     do rows <- sequence [ sequence [ cell | j <- [1..9] ] | i <- [1..9] ]
        return (Sudoku rows)
 
-{-prop_Sudoku :: Sudoku -> Bool
-prop_Sudoku = undefined
+prop_Sudoku :: Sudoku -> Bool
+prop_Sudoku sudoku = isSudoku sudoku
 
-isOkayBlock :: Block -> Bool
+{-isOkayBlock :: Block -> Bool
 isOkayBlock = undefined
 
 blocks :: Sudoku -> [Block]
