@@ -27,7 +27,7 @@ isSudoku sudoku = (length (rows sudoku) == 9) &&
                   (all (\x -> length x == 9) (rows sudoku)) &&
                   (areElementsValid sudoku)
 
--- Help function for isSudoku. Checks if the elements are 1-9 or blank.
+-- | help function for isSudoku. Checks if the elements are 1-9 or blank.
 areElementsValid :: Sudoku -> Bool
 areElementsValid sudoku = all (\x -> ( all (\y -> (
                           case y of
@@ -45,18 +45,21 @@ isSolved sudoku = not (any (\x -> (
 printSudoku :: Sudoku -> IO ()
 printSudoku sud = putStrLn (maybeMatrixToString (rows sud))
 
+-- | converts the matrix of maybe ints to a matrix of chars
 maybeMatrixToString :: [[Maybe Int]] -> String
 maybeMatrixToString matrix = unlines (map maybeListToString matrix)
 
+-- | converts the list of maybe ints to a list of chars
 maybeListToString :: [Maybe Int] -> String
 maybeListToString list = map maybeToChar list
 
+-- | converts maybe int to char
 maybeToChar :: Maybe Int -> Char
 maybeToChar (Just n) = chr (ord '0' + n)
 maybeToChar Nothing = chr (ord '.')
 
--- readSudoku file reads from the file, and either delivers it, or stops
--- if the file did not contain a sudoku
+-- | reads from the file, and either delivers it, or stops
+-- | if the file did not contain a sudoku
 readSudoku :: FilePath -> IO Sudoku
 readSudoku file = do
                     contents <- readFile file
@@ -64,6 +67,7 @@ readSudoku file = do
                     then return (Sudoku (stringListToMatrix (lines contents)))
                     else error "File does not contain a Sudoku"
 
+-- | converts char to maybe int
 convertToInt :: Char -> Maybe Int
 convertToInt input  | input == chr 49 = Just 1
                     | input == chr 50 = Just 2
@@ -76,52 +80,61 @@ convertToInt input  | input == chr 49 = Just 1
                     | input == chr 57 = Just 9
                     | input == chr 46 = Nothing
 
---fileToString :: FilePath -> String
---fileToString file = return (readFile file)
-
+-- | converts the matrix of chars to a matrix of maybe ints
 stringListToMatrix :: [String] -> [[Maybe Int]]
 stringListToMatrix charMatrix = map stringToList charMatrix
 
+-- | converts the list of chars to a list of maybe ints
 stringToList :: String -> [Maybe Int]
 stringToList string = map convertToInt string
 
 -------------------------------------------------------------------------
 
--- cell generates an arbitrary cell in a Sudoku
+-- | cell generates an arbitrary cell in a Sudoku
 cell :: Gen (Maybe Int)
 cell = frequency [(9, return Nothing), (1, do elements maybeInts)]
 
 maybeInts = [Just 1, Just 2, Just 3, Just 4, Just 5, Just 6, Just 7, Just 8, Just 9]
 
--- an instance for generating Arbitrary Sudokus
+-- | an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
   arbitrary =
     do rows <- sequence [ sequence [ cell | j <- [1..9] ] | i <- [1..9] ]
        return (Sudoku rows)
 
+-- | checks that sudoku is a sudoku
 prop_Sudoku :: Sudoku -> Bool
 prop_Sudoku sudoku = isSudoku sudoku
 
 type Block = [Maybe Int]
 
+-- | checks that the block does not contain duplicets of the same number
 isOkayBlock :: Block -> Bool
 isOkayBlock (x:[]) = True
 isOkayBlock (x:xs) = if (any (\y -> y == x)) xs && (not (x == Nothing))
                      then False
                      else isOkayBlock xs
 
+
+-- | divides the sudoku to a list of blocks
 blocks :: Sudoku -> [Block]
 blocks sudoku = concat [rows sudoku, transpose (rows sudoku),
                         sudokuToBlock3x3 (rows sudoku)]
+-- Also add a property that states that, for each Sudoku, there are 3*9 blocks,
+-- and each block has exactly 9 cells.
 
+
+-- | sends all the lists in the list to listToSudoku and outputs a list of blocks
 sudokuToBlock3x3 :: [[Maybe Int]] -> [Block]
 sudokuToBlock3x3 sudoku = [listToSudoku (take 3 sudoku),
                           listToSudoku (take 3 (drop 3 sudoku)),
                           listToSudoku (drop 6 sudoku)]
 
+-- | takes the three first elements in every list and combines them to a block
 listToSudoku :: [[Maybe Int]] -> Block
 listToSudoku (x:y:z:a) = concat [(take 3 x), (take 3 y), (take 3 z)]
 
+-- | checks if every block in the input sudoku is okay
 isOkay :: Sudoku -> Bool
 isOkay sudoku = all (\x -> (isOkayBlock x)) (blocks sudoku)
 
