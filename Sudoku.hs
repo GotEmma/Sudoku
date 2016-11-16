@@ -88,7 +88,9 @@ stringToList string = map convertToInt string
 
 -- cell generates an arbitrary cell in a Sudoku
 cell :: Gen (Maybe Int)
-cell = undefined
+cell = frequency [(1, return Nothing), (9, do elements maybeInts)]
+
+maybeInts = [Just 1, Just 2, Just 3, Just 4, Just 5, Just 6, Just 7, Just 8, Just 9]
 
 -- an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
