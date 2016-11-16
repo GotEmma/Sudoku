@@ -2,6 +2,7 @@ module Sudoku where
 
 import Test.QuickCheck
 import Data.Char
+import Data.List
 import Data.List.Split
 
 -------------------------------------------------------------------------
@@ -98,6 +99,9 @@ instance Arbitrary Sudoku where
     do rows <- sequence [ sequence [ cell | j <- [1..9] ] | i <- [1..9] ]
        return (Sudoku rows)
 
+prop_Sudoku :: Sudoku -> Bool
+prop_Sudoku sudoku = isSudoku sudoku
+
 type Block = [Maybe Int]
 
 isOkayBlock :: Block -> Bool
@@ -106,11 +110,19 @@ isOkayBlock (x:xs) = if any (\y -> y == x) xs
                      then False
                      else isOkayBlock xs
 
-prop_Sudoku :: Sudoku -> Bool
-prop_Sudoku sudoku = isSudoku sudoku
-
 blocks :: Sudoku -> [Block]
-blocks = undefined
+blocks sudoku = concat [rows sudoku, transpose (rows sudoku), sudokuToBlock3x3 (rows sudoku)]
+
+sudokuToBlock3x3 :: [[Maybe Int]] -> [Block]
+sudokuToBlock3x3 sudoku = [listToSudoku (take 3 sudoku),
+                          listToSudoku (take 3 (drop 3 sudoku)),
+                          listToSudoku (drop 6 sudoku)]
+
+listToSudoku :: [[Maybe Int]] -> Block
+listToSudoku (x:y:z) = concat [take 3 x, take 3 y, concat (take 3 z)]
+
+--listToSudoku (x:[]) = take 3 x
+--listToSudoku (x:xs) = take 3 x + (listToSudoku xs)
 
 isOkay :: Sudoku -> Bool
 isOkay = undefined
