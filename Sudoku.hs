@@ -111,7 +111,8 @@ isOkayBlock (x:xs) = if any (\y -> y == x) xs
                      else isOkayBlock xs
 
 blocks :: Sudoku -> [Block]
-blocks sudoku = concat [rows sudoku, transpose (rows sudoku), sudokuToBlock3x3 (rows sudoku)]
+blocks sudoku = concat [rows sudoku, transpose (rows sudoku),
+                        sudokuToBlock3x3 (rows sudoku)]
 
 sudokuToBlock3x3 :: [[Maybe Int]] -> [Block]
 sudokuToBlock3x3 sudoku = [listToSudoku (take 3 sudoku),
@@ -119,10 +120,7 @@ sudokuToBlock3x3 sudoku = [listToSudoku (take 3 sudoku),
                           listToSudoku (drop 6 sudoku)]
 
 listToSudoku :: [[Maybe Int]] -> Block
-listToSudoku (x:y:z) = concat [take 3 x, take 3 y, concat (take 3 z)]
-
---listToSudoku (x:[]) = take 3 x
---listToSudoku (x:xs) = take 3 x + (listToSudoku xs)
+listToSudoku (x:y:z:a) = concat [(take 3 x), (take 3 y), (take 3 z)]
 
 isOkay :: Sudoku -> Bool
 isOkay = undefined
