@@ -7,14 +7,19 @@ import Data.List.Split
 
 -------------------------------------------------------------------------
 
+data Sudoku = Sudoku { rows :: [[Maybe Int]] }
+  deriving ( Show, Eq )
+
+type Pos = (Int,Int)
+
+type Block = [Maybe Int]
+
+maybeInts = [Just 1, Just 2, Just 3, Just 4, Just 5,
+             Just 6, Just 7, Just 8, Just 9]
+
 main :: IO ()
 main = do
-  printSudoku example
-  printSudoku example2
-  printSudoku allBlankSudoku
-
-data Sudoku = Sudoku { rows :: [[Maybe Int]] }
- deriving ( Show, Eq )
+        printSudoku example
 
 -- | allBlankSudoku is a sudoku with just blanks.
 allBlankSudoku :: Sudoku
@@ -94,8 +99,6 @@ stringToList string = map convertToInt string
 cell :: Gen (Maybe Int)
 cell = frequency [(9, return Nothing), (1, do elements maybeInts)]
 
-maybeInts = [Just 1, Just 2, Just 3, Just 4, Just 5, Just 6, Just 7, Just 8, Just 9]
-
 -- | an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
   arbitrary =
@@ -106,39 +109,56 @@ instance Arbitrary Sudoku where
 prop_Sudoku :: Sudoku -> Bool
 prop_Sudoku sudoku = isSudoku sudoku
 
-type Block = [Maybe Int]
-
 -- | checks that the block does not contain duplicets of the same number
 isOkayBlock :: Block -> Bool
+isOkayBlock ([]) = True
 isOkayBlock (x:[]) = True
 isOkayBlock (x:xs) = if (any (\y -> y == x)) xs && (not (x == Nothing))
                      then False
                      else isOkayBlock xs
 
-
 -- | divides the sudoku to a list of blocks
 blocks :: Sudoku -> [Block]
 blocks sudoku = concat [rows sudoku, transpose (rows sudoku),
-                        sudokuToBlock3x3 (rows sudoku)]
--- Also add a property that states that, for each Sudoku, there are 3*9 blocks,
--- and each block has exactly 9 cells.
+                        sudokuTo3x3Block (rows sudoku)]
 
+-- | checks that for each Sudoku, there are 3*9 blocks,
+-- | and each block has exactly 9 cells.
+prop_Blocks :: Sudoku -> Bool
+prop_Blocks sudoku = all (\x -> (length x == 9)) (blocks sudoku)
 
 -- | sends all the lists in the list to listToSudoku and outputs a list of blocks
-sudokuToBlock3x3 :: [[Maybe Int]] -> [Block]
-sudokuToBlock3x3 sudoku = [listToSudoku (take 3 sudoku),
-                          listToSudoku (take 3 (drop 3 sudoku)),
-                          listToSudoku (drop 6 sudoku)]
+sudokuTo3x3Block :: [[Maybe Int]] -> [Block]
+sudokuTo3x3Block sudoku = [maybeMatrixToBlock (take 3 sudoku),
+                          maybeMatrixToBlock (take 3 (drop 3 sudoku)),
+                          maybeMatrixToBlock (drop 6 sudoku)]
 
 -- | takes the three first elements in every list and combines them to a block
-listToSudoku :: [[Maybe Int]] -> Block
-listToSudoku (x:y:z:a) = concat [(take 3 x), (take 3 y), (take 3 z)]
+maybeMatrixToBlock :: [[Maybe Int]] -> Block
+maybeMatrixToBlock (x:y:z:a) = concat [(take 3 x), (take 3 y), (take 3 z)]
 
 -- | checks if every block in the input sudoku is okay
 isOkay :: Sudoku -> Bool
 isOkay sudoku = all (\x -> (isOkayBlock x)) (blocks sudoku)
 
 -------------------------------------------------------------------------
+
+--blanks :: Sudoku -> [Pos]
+--blanks sudoku = map linesBlank sudoku
+
+--linesBlank :: [Maybe Int] -> Bool
+--linesBlank line | elemIndex Nothing line
+
+--(!!=) :: [a] -> (Int,a) -> [a]
+
+--update :: Sudoku -> Pos -> Maybe Int -> Sudoku
+
+--candidates :: Sudoku -> Pos -> [Int]
+
+
+
+-------------------------------------------------------------------------
+
 example :: Sudoku
 example =
     Sudoku
