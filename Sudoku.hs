@@ -131,6 +131,49 @@ isOkay sudoku = all (\x -> (isOkayBlock x)) (blocks sudoku)
 
 -------------------------------------------------------------------------
 
+blanks :: Sudoku -> [Pos]
+blanks sudoku = zip (amountInRows (listOfNrOfBlanks (rows sudoku)))
+                (isBlank(sudokuToPairIndexList (rows sudoku)))
+
+amountInRows :: [Int] -> [Int]
+amountInRows list = concat [replicate (list!!0) 0, replicate (list!!1) 1,
+                            replicate (list!!2) 2, replicate (list!!3) 3,
+                            replicate (list!!4) 4, replicate (list!!5) 5,
+                            replicate (list!!6) 6, replicate (list!!7) 7,
+                            replicate (list!!8) 8]
+
+listOfNrOfBlanks :: [[Maybe Int]] -> [Int]
+listOfNrOfBlanks (x:[]) = [nrOfBlanks x]
+listOfNrOfBlanks (x:xs) = [nrOfBlanks x] ++ listOfNrOfBlanks xs
+
+nrOfBlanks :: [Maybe Int] -> Int
+nrOfBlanks list = length (isBlank(pairIndex list))
+
+sudokuToPairIndexList :: [[Maybe Int]] -> [(Maybe Int, Int)]
+sudokuToPairIndexList (x:[]) = pairIndex x
+sudokuToPairIndexList (x:xs) = pairIndex x ++ sudokuToPairIndexList xs
+
+isBlank :: [(Maybe Int, Int)] -> [Int]
+isBlank (x:[]) = if (fst x) == Nothing then [(snd x)]
+                 else []
+isBlank (x:xs) = if (fst x) == Nothing then [(snd x)] ++ isBlank xs
+                 else isBlank xs
+
+pairIndex :: [Maybe Int] -> [(Maybe Int, Int)]
+pairIndex list = zip list [0..8]
+
+
+
+--(!!=) :: [a] -> (Int,a) -> [a]
+
+--update :: Sudoku -> Pos -> Maybe Int -> Sudoku
+
+--candidates :: Sudoku -> Pos -> [Int]
+
+
+
+-------------------------------------------------------------------------
+
 example :: Sudoku
 example =
     Sudoku
@@ -147,3 +190,20 @@ example =
   where
     n = Nothing
     j = Just
+
+example2 :: Sudoku
+example2 =
+    Sudoku
+        [ [j 3,j 6,j 5,n  ,j 7,j 1,j 2,j 5,j 4]
+        , [j 5,j 5,j 5,j 5,j 5,j 5,j 1,j 8,n  ]
+        , [j 5,j 5,j 9,j 2,j 5,j 4,j 7,n  ,j 5]
+        , [n  ,j 5,j 5,j 5,j 1,j 3,j 5,j 2,j 8]
+        , [j 4,n  ,j 5,j 5,j 5,j 2,j 5,j 5,j 9]
+        , [j 2,j 7,n  ,j 4,j 6,j 5,j 5,j 5,j 5]
+        , [j 5,j 5,j 5,j 3,n  ,j 8,j 9,j 5,j 5]
+        , [j 5,j 8,j 3,j 5,j 5,n  ,j 5,j 6,j 5]
+        , [j 5,j 5,j 7,j 6,j 9,j 5,n  ,j 4,j 3]
+        ]
+      where
+        n = Nothing
+        j = Just
