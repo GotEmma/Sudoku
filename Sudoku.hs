@@ -115,7 +115,7 @@ prop_Blocks :: Sudoku -> Bool
 prop_Blocks sudoku = (all (\x -> (length x == 9)) (blocks sudoku)) &&
                      (length (blocks sudoku) == 27)
 
--- | sends all the lists in the list to listToSudoku
+-- | sends all the lists in the list to maybeMatrixToBlock
 -- | and outputs a list of blocks
 sudokuTo3x3Block :: [[Maybe Int]] -> [Block]
 sudokuTo3x3Block sudoku = concat [maybeMatrixToBlock (take 3 sudoku),
