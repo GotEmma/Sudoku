@@ -112,18 +112,21 @@ blocks sudoku = concat [rows sudoku, transpose (rows sudoku),
 -- | checks that for each Sudoku, there are 3*9 blocks,
 -- | and each block has exactly 9 cells
 prop_Blocks :: Sudoku -> Bool
-prop_Blocks sudoku = all (\x -> (length x == 9)) (blocks sudoku)
+prop_Blocks sudoku = (all (\x -> (length x == 9)) (blocks sudoku)) &&
+                     (length (blocks sudoku) == 27)
 
 -- | sends all the lists in the list to listToSudoku
 -- | and outputs a list of blocks
 sudokuTo3x3Block :: [[Maybe Int]] -> [Block]
-sudokuTo3x3Block sudoku = [maybeMatrixToBlock (take 3 sudoku),
+sudokuTo3x3Block sudoku = concat [maybeMatrixToBlock (take 3 sudoku),
                           maybeMatrixToBlock (take 3 (drop 3 sudoku)),
                           maybeMatrixToBlock (drop 6 sudoku)]
 
 -- | takes the first three elements in every list and combines them to a block
-maybeMatrixToBlock :: [[Maybe Int]] -> Block
-maybeMatrixToBlock (x:y:z:a) = concat [(take 3 x), (take 3 y), (take 3 z)]
+maybeMatrixToBlock :: [[Maybe Int]] -> [Block]
+maybeMatrixToBlock (x:y:z:a) = [concat [(take 3 x), (take 3 y), (take 3 z)],
+                               concat [(take 3 (drop 3 x)), (take 3 (drop 3 y)), (take 3 (drop 3 z))],
+                               concat [(drop 6 x), (drop 6 y), (drop 6 z)]]
 
 -- | checks if every block in the input sudoku is okay
 isOkay :: Sudoku -> Bool
@@ -162,15 +165,40 @@ isBlank (x:xs) = if (fst x) == Nothing then [(snd x)] ++ isBlank xs
 pairIndex :: [Maybe Int] -> [(Maybe Int, Int)]
 pairIndex list = zip list [0..8]
 
+(!!=) :: [a] -> (Int,a) -> [a]
+list !!= (index, element) = take index list ++ [element] ++ drop (index+1) list
 
+prop_change :: [a] -> (Int,a) -> Bool
+prop_change = undefined
 
---(!!=) :: [a] -> (Int,a) -> [a]
+update :: Sudoku -> Pos -> Maybe Int -> Sudoku
+update sudoku pos newValue = Sudoku ((rows sudoku) !!= ((fst pos),
+                                    (updateInRow (rows sudoku) (pos) newValue)))
 
---update :: Sudoku -> Pos -> Maybe Int -> Sudoku
+updateInRow :: [[Maybe Int]] -> Pos -> Maybe Int -> [Maybe Int]
+updateInRow sudoku pos newValue = (sudoku!!(fst pos)) !!= ((snd pos), newValue)
 
---candidates :: Sudoku -> Pos -> [Int]
+prop_Update :: Sudoku -> Pos -> Maybe Int -> Bool
+prop_Update = undefined
 
+{-candidates :: Sudoku -> Pos -> [Int]
+candidates sudoku pos = findBlocks (rows sudoku) pos
 
+findBlocks :: [[Maybe Int]] -> Pos -> [[Maybe Int]]
+findBlocks sudoku pos = sudoku!!(fst pos) ++ sudoku!!(snd pos) ++
+                        find3x3Blocks sudoku pos
+
+find3x3Blocks :: [[Maybe Int]] -> Pos -> [Maybe Int]
+find3x3Blocks sudoku pos | (fst pos) <= 2 = find3x3Blocks' (take 3 sudoku) pos
+                         | ((fst pos) => 2) && ((fst pos) <= 5) =
+                           find3x3Blocks' (take 3 (drop 3 sudoku)) pos
+                         | otherwise find3x3Blocks' ((drop 6 sudoku)) pos
+
+find3x3Blocks' :: [[Maybe Int]] -> Pos -> [Maybe Int]
+find3x3Blocks' list pos  | (snd pos) <= 2 = take 3 list
+                         | ((fst pos) => 2) && ((fst pos) <= 5) =
+                           find3x3Blocks' (take 3 (drop 3 sudoku)) pos
+                         | otherwise find3x3Blocks' ((drop 6 sudoku)) pos-}
 
 -------------------------------------------------------------------------
 
