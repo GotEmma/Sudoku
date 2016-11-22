@@ -185,41 +185,49 @@ prop_Update :: Sudoku -> Pos -> Maybe Int -> Bool
 prop_Update = undefined
 
 candidates :: Sudoku -> Pos -> [Int]
-candidates sudoku pos = putLists (findBlocks (rows sudoku) pos)
+candidates sudoku pos = converteToInt (listOfOkayNrs (findBlocks (rows sudoku) pos) maybeInts)
 
-putLists :: [[Maybe Int]] -> [Int]
-putLists (x:[]) = converteInt (compareLists (removeBlanks x) maybeInts)
-putLists (x:xs) = converteInt (compareLists (removeBlanks x) maybeInts)
-                  ++ putLists xs
+--FUNKAR
+--oneListOfBlocks :: [[Maybe Int]] -> [Maybe Int]
+--oneListOfBlocks (x:[]) = removeBlanks x
+--oneListOfBlocks (x:xs) = removeBlanks x ++ oneListOfBlocks xs
 
-converteInt :: [Maybe Int] -> [Int]
-converteInt (x:[]) = [fromJust x]
-converteInt (x:xs) = [fromJust x] ++ converteInt xs
+--FUNKAR
+converteToInt :: [Maybe Int] -> [Int]
+converteToInt (x:[]) = [fromJust x]
+converteToInt (x:xs) = [fromJust x] ++ converteToInt xs
 
-removeBlanks :: [Maybe Int] -> [Maybe Int]
-removeBlanks (x:[]) = if x == Nothing
-                      then []
-                      else [x]
-removeBlanks (x:xs) = if x == Nothing
-                      then [] ++ removeBlanks xs
-                      else [x] ++ removeBlanks xs
+--FUNKAR
+--removeBlanks :: [Maybe Int] -> [Maybe Int]
+--removeBlanks (x:[]) = if x == Nothing
+--                      then []
+--                      else [x]
+--removeBlanks (x:xs) = if x == Nothing
+--                      then [] ++ removeBlanks xs
+--                      else [x] ++ removeBlanks xs
 
-compareLists :: [Maybe Int] -> [Maybe Int] -> [Maybe Int]
-compareLists (x:[]) maybeInt = concat [(take (fromJust (maybeInt!!(fromJust x))) maybeInt),
-                               (drop (fromJust (maybeInt!!((fromJust x) + 1))) maybeInt)]
-compareLists (x:xs) maybeInt = compareLists xs (concat [(take (fromJust (maybeInt!!(fromJust x))) maybeInt),
-                               (drop (fromJust (maybeInt!!((fromJust x) + 1))) maybeInt)])
+--FUNKAR
+listOfOkayNrs :: [[Maybe Int]] -> [Maybe Int] -> [Maybe Int]
+listOfOkayNrs matrix (x:[]) = if all (\y -> isOkayBlock (y ++ [x])) matrix
+                              then [x]
+                              else []
+listOfOkayNrs matrix (x:xs) = if all (\y -> isOkayBlock (y ++ [x])) matrix
+                              then [x] ++ listOfOkayNrs matrix xs
+                              else [] ++ listOfOkayNrs matrix xs
 
+--FUNKAR
 findBlocks :: [[Maybe Int]] -> Pos -> [[Maybe Int]]
 findBlocks sudoku pos = [sudoku!!(fst pos)] ++ [(transpose sudoku)!!(snd pos)] ++
                         [find3x3Blocks sudoku pos]
 
+--FUNKAR
 find3x3Blocks :: [[Maybe Int]] -> Pos -> [Maybe Int]
 find3x3Blocks sudoku pos | (fst pos) <= 2 = find3x3BlocksHelp (take 3 sudoku) pos
                          | ((fst pos) >= 2) && ((fst pos) <= 5) =
                            find3x3BlocksHelp (take 3 (drop 3 sudoku)) pos
                          | otherwise = find3x3BlocksHelp ((drop 6 sudoku)) pos
 
+--FUNKAR
 find3x3BlocksHelp :: [[Maybe Int]] -> Pos -> [Maybe Int]
 find3x3BlocksHelp (x:y:z:a) pos  | (snd pos) <= 2 = concat [(take 3 x), (take 3 y), (take 3 z)]
                                  | ((snd pos) >= 2) && ((snd pos) <= 5) =
