@@ -3,6 +3,7 @@ module Sudoku where
 import Test.QuickCheck
 import Data.Char
 import Data.List
+import Data.Maybe
 
 -------------------------------------------------------------------------
 
@@ -125,8 +126,10 @@ sudokuTo3x3Block sudoku = concat [maybeMatrixToBlock (take 3 sudoku),
 -- | takes the first three elements in every list and combines them to a block
 maybeMatrixToBlock :: [[Maybe Int]] -> [Block]
 maybeMatrixToBlock (x:y:z:a) = [concat [(take 3 x), (take 3 y), (take 3 z)],
-                               concat [(take 3 (drop 3 x)), (take 3 (drop 3 y)), (take 3 (drop 3 z))],
-                               concat [(drop 6 x), (drop 6 y), (drop 6 z)]]
+                                concat [(take 3 (drop 3 x)),
+                                        (take 3 (drop 3 y)),
+                                        (take 3 (drop 3 z))],
+                                concat [(drop 6 x), (drop 6 y), (drop 6 z)]]
 
 -- | checks if every block in the input sudoku is okay
 isOkay :: Sudoku -> Bool
@@ -181,24 +184,46 @@ updateInRow sudoku pos newValue = (sudoku!!(fst pos)) !!= ((snd pos), newValue)
 prop_Update :: Sudoku -> Pos -> Maybe Int -> Bool
 prop_Update = undefined
 
-{-candidates :: Sudoku -> Pos -> [Int]
-candidates sudoku pos = findBlocks (rows sudoku) pos
+candidates :: Sudoku -> Pos -> [Int]
+candidates sudoku pos = putLists (findBlocks (rows sudoku) pos)
+
+putLists :: [[Maybe Int]] -> [Int]
+putLists (x:[]) = converteInt (compareLists (removeBlanks x) maybeInts)
+putLists (x:xs) = converteInt (compareLists (removeBlanks x) maybeInts) ++ putLists xs
+
+converteInt :: [Maybe Int] -> [Int]
+converteInt (x:[]) = [fromJust x]
+converteInt (x:xs) = [fromJust x] ++ converteInt xs
+
+removeBlanks :: [Maybe Int] -> [Maybe Int]
+removeBlanks (x:[]) = if x == Nothing
+                      then []
+                      else [x]
+removeBlanks (x:xs) = if x == Nothing
+                      then [] ++ removeBlanks xs
+                      else [x] ++ removeBlanks xs
+
+compareLists :: [Maybe Int] -> [Maybe Int] -> [Maybe Int]
+compareLists (x:[]) maybeInt = concat [(take (fromJust (maybeInt!!(fromJust x))) maybeInt),
+                               (drop (fromJust (maybeInt!!(fromJust x) + 1)) maybeInt)]
+compareLists (x:xs) maybeInt = compareLists xs (take (fromJust (maybeInt!!(fromJust x))) maybeInt)
+                              -- drop (fromJust (maybeInt!!(fromJust x) + 1)) maybeInt)
 
 findBlocks :: [[Maybe Int]] -> Pos -> [[Maybe Int]]
-findBlocks sudoku pos = sudoku!!(fst pos) ++ sudoku!!(snd pos) ++
-                        find3x3Blocks sudoku pos
+findBlocks sudoku pos = [sudoku!!(fst pos)] ++ [(transpose sudoku)!!(snd pos)] ++
+                        [find3x3Blocks sudoku pos]
 
 find3x3Blocks :: [[Maybe Int]] -> Pos -> [Maybe Int]
-find3x3Blocks sudoku pos | (fst pos) <= 2 = find3x3Blocks' (take 3 sudoku) pos
-                         | ((fst pos) => 2) && ((fst pos) <= 5) =
-                           find3x3Blocks' (take 3 (drop 3 sudoku)) pos
-                         | otherwise find3x3Blocks' ((drop 6 sudoku)) pos
+find3x3Blocks sudoku pos | (fst pos) <= 2 = find3x3BlocksHelp (take 3 sudoku) pos
+                         | ((fst pos) >= 2) && ((fst pos) <= 5) =
+                           find3x3BlocksHelp (take 3 (drop 3 sudoku)) pos
+                         | otherwise = find3x3BlocksHelp ((drop 6 sudoku)) pos
 
-find3x3Blocks' :: [[Maybe Int]] -> Pos -> [Maybe Int]
-find3x3Blocks' list pos  | (snd pos) <= 2 = take 3 list
-                         | ((fst pos) => 2) && ((fst pos) <= 5) =
-                           find3x3Blocks' (take 3 (drop 3 sudoku)) pos
-                         | otherwise find3x3Blocks' ((drop 6 sudoku)) pos-}
+find3x3BlocksHelp :: [[Maybe Int]] -> Pos -> [Maybe Int]
+find3x3BlocksHelp (x:y:z:a) pos  | (snd pos) <= 2 = concat [(take 3 x), (take 3 y), (take 3 z)]
+                                 | ((snd pos) >= 2) && ((snd pos) <= 5) =
+                                   concat [(take 3 (drop 3 x)), (take 3 (drop 3 y)), (take 3 (drop 3 z))]
+                                 | otherwise = concat [(drop 6 x), (drop 6 y), (drop 6 z)]
 
 -------------------------------------------------------------------------
 
