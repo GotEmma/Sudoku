@@ -189,7 +189,8 @@ candidates sudoku pos = putLists (findBlocks (rows sudoku) pos)
 
 putLists :: [[Maybe Int]] -> [Int]
 putLists (x:[]) = converteInt (compareLists (removeBlanks x) maybeInts)
-putLists (x:xs) = converteInt (compareLists (removeBlanks x) maybeInts) ++ putLists xs
+putLists (x:xs) = converteInt (compareLists (removeBlanks x) maybeInts)
+                  ++ putLists xs
 
 converteInt :: [Maybe Int] -> [Int]
 converteInt (x:[]) = [fromJust x]
@@ -205,9 +206,9 @@ removeBlanks (x:xs) = if x == Nothing
 
 compareLists :: [Maybe Int] -> [Maybe Int] -> [Maybe Int]
 compareLists (x:[]) maybeInt = concat [(take (fromJust (maybeInt!!(fromJust x))) maybeInt),
-                               (drop (fromJust (maybeInt!!(fromJust x) + 1)) maybeInt)]
-compareLists (x:xs) maybeInt = compareLists xs (take (fromJust (maybeInt!!(fromJust x))) maybeInt)
-                              -- drop (fromJust (maybeInt!!(fromJust x) + 1)) maybeInt)
+                               (drop (fromJust (maybeInt!!((fromJust x) + 1))) maybeInt)]
+compareLists (x:xs) maybeInt = compareLists xs (concat [(take (fromJust (maybeInt!!(fromJust x))) maybeInt),
+                               (drop (fromJust (maybeInt!!((fromJust x) + 1))) maybeInt)])
 
 findBlocks :: [[Maybe Int]] -> Pos -> [[Maybe Int]]
 findBlocks sudoku pos = [sudoku!!(fst pos)] ++ [(transpose sudoku)!!(snd pos)] ++
