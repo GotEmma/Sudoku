@@ -137,10 +137,13 @@ isOkay sudoku = all (\x -> (isOkayBlock x)) (blocks sudoku)
 
 -------------------------------------------------------------------------
 
+-- | returns a list of the positions in the given Sudoku that are blank by
+-- | zipping the x-positions with the y-positions
 blanks :: Sudoku -> [Pos]
 blanks sudoku = zip (amountInRows (listOfNrOfBlanks (rows sudoku)))
-                (isBlank(sudokuToPairIndexList (rows sudoku)))
+                    (isBlank(sudokuToPairIndexList (rows sudoku)))
 
+-- | returns a list of all the blanks y-positions
 amountInRows :: [Int] -> [Int]
 amountInRows list = concat [replicate (list!!0) 0, replicate (list!!1) 1,
                             replicate (list!!2) 2, replicate (list!!3) 3,
@@ -148,65 +151,63 @@ amountInRows list = concat [replicate (list!!0) 0, replicate (list!!1) 1,
                             replicate (list!!6) 6, replicate (list!!7) 7,
                             replicate (list!!8) 8]
 
+-- | returns a list of the number of blanks from all the rows
 listOfNrOfBlanks :: [[Maybe Int]] -> [Int]
 listOfNrOfBlanks (x:[]) = [nrOfBlanks x]
 listOfNrOfBlanks (x:xs) = [nrOfBlanks x] ++ listOfNrOfBlanks xs
 
+-- | returns the number of blanks in a row
 nrOfBlanks :: [Maybe Int] -> Int
 nrOfBlanks list = length (isBlank(pairIndex list))
 
+-- | creates a total list of pairs containing a Maybe Int and the x position
 sudokuToPairIndexList :: [[Maybe Int]] -> [(Maybe Int, Int)]
 sudokuToPairIndexList (x:[]) = pairIndex x
 sudokuToPairIndexList (x:xs) = pairIndex x ++ sudokuToPairIndexList xs
 
+-- | takes a list of pairs (Maybe Int and pos) and returns a list of the pos
+-- | of the Maybe Ints that are empty (Nothing)
 isBlank :: [(Maybe Int, Int)] -> [Int]
 isBlank (x:[]) = if (fst x) == Nothing then [(snd x)]
                  else []
 isBlank (x:xs) = if (fst x) == Nothing then [(snd x)] ++ isBlank xs
                  else isBlank xs
 
+-- | returns list of pairs containing a Maybe Int and the x or y position
 pairIndex :: [Maybe Int] -> [(Maybe Int, Int)]
 pairIndex list = zip list [0..8]
 
+-- | updates the given list with the new value at the given index
 (!!=) :: [a] -> (Int,a) -> [a]
 list !!= (index, element) = take index list ++ [element] ++ drop (index+1) list
 
 prop_change :: [a] -> (Int,a) -> Bool
 prop_change = undefined
 
+-- | updates the given Sudoku at the given position with the new value
 update :: Sudoku -> Pos -> Maybe Int -> Sudoku
 update sudoku pos newValue = Sudoku ((rows sudoku) !!= ((fst pos),
                                     (updateInRow (rows sudoku) (pos) newValue)))
 
+-- | updates the given row at the given position with the new value
 updateInRow :: [[Maybe Int]] -> Pos -> Maybe Int -> [Maybe Int]
 updateInRow sudoku pos newValue = (sudoku!!(fst pos)) !!= ((snd pos), newValue)
 
 prop_Update :: Sudoku -> Pos -> Maybe Int -> Bool
 prop_Update = undefined
 
+-- | determines which numbers could be legally written into the given position
+-- | in the given sudoku
 candidates :: Sudoku -> Pos -> [Int]
 candidates sudoku pos = converteToInt (listOfOkayNrs (findBlocks (rows sudoku) pos) maybeInts)
 
---FUNKAR
---oneListOfBlocks :: [[Maybe Int]] -> [Maybe Int]
---oneListOfBlocks (x:[]) = removeBlanks x
---oneListOfBlocks (x:xs) = removeBlanks x ++ oneListOfBlocks xs
-
---FUNKAR
+-- | convertes a list of Maybe Ints to a list of Ints
 converteToInt :: [Maybe Int] -> [Int]
 converteToInt (x:[]) = [fromJust x]
 converteToInt (x:xs) = [fromJust x] ++ converteToInt xs
 
---FUNKAR
---removeBlanks :: [Maybe Int] -> [Maybe Int]
---removeBlanks (x:[]) = if x == Nothing
---                      then []
---                      else [x]
---removeBlanks (x:xs) = if x == Nothing
---                      then [] ++ removeBlanks xs
---                      else [x] ++ removeBlanks xs
-
---FUNKAR
+-- | returns a list of Maybe Int candidates given a list of blocks and list of
+-- | Maybe Ints
 listOfOkayNrs :: [[Maybe Int]] -> [Maybe Int] -> [Maybe Int]
 listOfOkayNrs matrix (x:[]) = if all (\y -> isOkayBlock (y ++ [x])) matrix
                               then [x]
@@ -215,24 +216,44 @@ listOfOkayNrs matrix (x:xs) = if all (\y -> isOkayBlock (y ++ [x])) matrix
                               then [x] ++ listOfOkayNrs matrix xs
                               else [] ++ listOfOkayNrs matrix xs
 
---FUNKAR
+-- | returns a list of the blocks that the position is a part of
 findBlocks :: [[Maybe Int]] -> Pos -> [[Maybe Int]]
-findBlocks sudoku pos = [sudoku!!(fst pos)] ++ [(transpose sudoku)!!(snd pos)] ++
+findBlocks sudoku pos = [sudoku!!(fst pos)] ++
+                        [(transpose sudoku)!!(snd pos)] ++
                         [find3x3Blocks sudoku pos]
 
---FUNKAR
+-- | returns the 3x3-block that the position is a part of by checking where the
+-- | x-position is and calling find3x3BlocksHelp
 find3x3Blocks :: [[Maybe Int]] -> Pos -> [Maybe Int]
-find3x3Blocks sudoku pos | (fst pos) <= 2 = find3x3BlocksHelp (take 3 sudoku) pos
-                         | ((fst pos) >= 2) && ((fst pos) <= 5) =
+find3x3Blocks sudoku pos | (fst pos) <=2 = find3x3BlocksHelp (take 3 sudoku) pos
+                         | ((fst pos) >=2) && ((fst pos) <= 5) =
                            find3x3BlocksHelp (take 3 (drop 3 sudoku)) pos
                          | otherwise = find3x3BlocksHelp ((drop 6 sudoku)) pos
 
---FUNKAR
+-- | returns the 3x3-block that the position is a part of by checking where the
+-- | y-position is
 find3x3BlocksHelp :: [[Maybe Int]] -> Pos -> [Maybe Int]
-find3x3BlocksHelp (x:y:z:a) pos  | (snd pos) <= 2 = concat [(take 3 x), (take 3 y), (take 3 z)]
-                                 | ((snd pos) >= 2) && ((snd pos) <= 5) =
-                                   concat [(take 3 (drop 3 x)), (take 3 (drop 3 y)), (take 3 (drop 3 z))]
-                                 | otherwise = concat [(drop 6 x), (drop 6 y), (drop 6 z)]
+find3x3BlocksHelp (x:y:z:a) pos  | (snd pos) <=2 =
+                                    concat [(take 3 x), (take 3 y), (take 3 z)]
+                                 | ((snd pos) >=2) && ((snd pos) <= 5) =
+                                    concat [(take 3 (drop 3 x)),
+                                            (take 3 (drop 3 y)),
+                                            (take 3 (drop 3 z))]
+                                 | otherwise =
+                                   concat [(drop 6 x), (drop 6 y), (drop 6 z)]
+
+{-solve :: Sudoku -> Maybe Sudoku
+solve sud = if (isSudoku sud) && (isOkay sud)
+            then solve' sud
+            else Nothing
+
+solve' :: Sudoku -> Maybe Sudoku
+solve' sud = if length (blanks sud) == 0
+             then sud
+             else recursiveSolve sud (take 1 (blanks sud))
+
+recursiveSolve :: Sudoku -> Pos ->-}
+
 
 -------------------------------------------------------------------------
 
