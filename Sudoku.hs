@@ -199,12 +199,7 @@ prop_Update = undefined
 -- | determines which numbers could be legally written into the given position
 -- | in the given sudoku
 candidates :: Sudoku -> Pos -> [Int]
-candidates sudoku pos = converteToInt (listOfOkayNrs (findBlocks (rows sudoku) pos) maybeInts)
-
--- | convertes a list of Maybe Ints to a list of Ints
-converteToInt :: [Maybe Int] -> [Int]
-converteToInt (x:[]) = [fromJust x]
-converteToInt (x:xs) = [fromJust x] ++ converteToInt xs
+candidates sudoku pos = catMaybes (listOfOkayNrs (findBlocks (rows sudoku) pos) maybeInts)
 
 -- | returns a list of Maybe Int candidates given a list of blocks and list of
 -- | Maybe Ints
@@ -242,17 +237,17 @@ find3x3BlocksHelp (x:y:z:a) pos  | (snd pos) <=2 =
                                  | otherwise =
                                    concat [(drop 6 x), (drop 6 y), (drop 6 z)]
 
-{-solve :: Sudoku -> Maybe Sudoku
+solve :: Sudoku -> Maybe Sudoku
 solve sud = if (isSudoku sud) && (isOkay sud)
-            then solve' sud
+            then solveHelp sud
             else Nothing
 
-solve' :: Sudoku -> Maybe Sudoku
-solve' sud = if length (blanks sud) == 0
-             then sud
-             else recursiveSolve sud (take 1 (blanks sud))
+solveHelp :: Sudoku -> Maybe Sudoku
+solveHelp sud | isSolved sud = Just sud
+              | otherwise =
+                listToMaybe (catMaybes [solve (update sud (head (blanks sud))
+                (Just i)) | i <- candidates sud (head (blanks sud))])
 
-recursiveSolve :: Sudoku -> Pos ->-}
 
 
 -------------------------------------------------------------------------
