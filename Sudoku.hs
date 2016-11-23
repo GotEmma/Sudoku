@@ -237,18 +237,43 @@ find3x3BlocksHelp (x:y:z:a) pos  | (snd pos) <=2 =
                                  | otherwise =
                                    concat [(drop 6 x), (drop 6 y), (drop 6 z)]
 
+-- | returns a solved Maybe Sudoku, Nothing if it can't be solved.
+-- | checks that the input sudoku is valid
 solve :: Sudoku -> Maybe Sudoku
 solve sud = if (isSudoku sud) && (isOkay sud)
-            then solveHelp sud
+            then solve' sud
             else Nothing
 
-solveHelp :: Sudoku -> Maybe Sudoku
-solveHelp sud | isSolved sud = Just sud
-              | otherwise =
-                listToMaybe (catMaybes [solve (update sud (head (blanks sud))
-                (Just i)) | i <- candidates sud (head (blanks sud))])
+-- | returns a solved Maybe Sudoku, Nothing if it can't be solved
+solve' :: Sudoku -> Maybe Sudoku
+solve' sud | isSolved sud = Just sud
+           | otherwise =
+             listToMaybe (catMaybes [solve' (update sud (head (blanks sud))
+             (Just i)) | i <- candidates sud (head (blanks sud))])
 
+-- | reads a file and prints the solution of the sudoku it contains,
+-- | or "No solution" if it can't be solved
+readAndSolve :: FilePath -> IO ()
+readAndSolve file = do
+                      sud <- readSudoku file
+                      let solved = solve sud
+                      maybe (print "No solution") printSudoku solved
 
+-- | checks if the first sudoku is the solved version of the second sudoku
+-- | checks that the first sudoku is solved and valid
+isSolutionOf :: Sudoku -> Sudoku -> Bool
+isSolutionOf solved unsolved = (isOkay solved) && (isSolved solved) &&
+                               (isSameSud (concat (rows solved))
+                                          (concat (rows unsolved)))
+
+-- | checks if the first sudoku is the solved version of the second sudoku
+isSameSud :: [Maybe Int] -> [Maybe Int] -> Bool
+isSameSud (x:[]) (y:[]) = (y == x) || (y == Nothing)
+isSameSud (x:xs) (y:ys) | y == Nothing = isSameSud xs ys
+                        | otherwise = y == x && (isSameSud xs ys)
+
+prop_SolveSound :: Sudoku -> Property
+prop_SolveSound = undefined
 
 -------------------------------------------------------------------------
 
