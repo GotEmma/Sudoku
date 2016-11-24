@@ -140,16 +140,12 @@ isOkay sudoku = all (\x -> (isOkayBlock x)) (blocks sudoku)
 -- | returns a list of the positions in the given Sudoku that are blank by
 -- | zipping the x-positions with the y-positions
 blanks :: Sudoku -> [Pos]
-blanks sudoku = zip (amountInRows (listOfNrOfBlanks (rows sudoku)))
-                    (isBlank(sudokuToPairIndexList (rows sudoku)))
+blanks sud = zip (amountInRows (listOfNrOfBlanks (rows sud)))
+                 (isBlank(sudokuToPairIndexList (rows sud)))
 
 -- | returns a list of all the blanks y-positions
 amountInRows :: [Int] -> [Int]
-amountInRows list = concat [replicate (list!!0) 0, replicate (list!!1) 1,
-                            replicate (list!!2) 2, replicate (list!!3) 3,
-                            replicate (list!!4) 4, replicate (list!!5) 5,
-                            replicate (list!!6) 6, replicate (list!!7) 7,
-                            replicate (list!!8) 8]
+amountInRows list = concat ([(replicate (list!!i) i) | i <- [0..8]])
 
 -- | returns a list of the number of blanks from all the rows
 listOfNrOfBlanks :: [[Maybe Int]] -> [Int]
@@ -179,8 +175,8 @@ pairIndex list = zip list [0..8]
 
 -- | updates the given list with the new value at the given index
 (!!=) :: [a] -> (Int,a) -> [a]
-list !!= (index, element) | (index >= (length list)) || (index < 0) = list
-                          | otherwise = take index list ++ [element] ++ drop (index+1) list
+list !!= (i, e) | (i >= (length list)) || (i < 0) = list
+                | otherwise = take i list ++ [e] ++ drop (i+1) list
 
 prop_Change :: [a] -> (Int,a) -> Bool
 prop_Change list (i, e) = i < 0 || i >= length list ||
@@ -190,26 +186,26 @@ prop_Change list (i, e) = i < 0 || i >= length list ||
 
 -- | updates the given Sudoku at the given position with the new value
 update :: Sudoku -> Pos -> Maybe Int -> Sudoku
-update sudoku pos newValue | ((fst pos) < 0) || ((fst pos) > 8) ||
-                             ((snd pos) < 0) || ((snd pos) > 8) = sudoku
-                           | otherwise = Sudoku ((rows sudoku) !!= ((fst pos),
-                                    (updateInRow (rows sudoku) (pos) newValue)))
+update sud pos new | ((fst pos) < 0) || ((fst pos) > 8) ||
+                          ((snd pos) < 0) || ((snd pos) > 8) = sud
+                        | otherwise = Sudoku ((rows sud) !!= ((fst pos),
+                                      (updateInRow (rows sud) (pos) new)))
 
 -- | updates the given row at the given position with the new value
 updateInRow :: [[Maybe Int]] -> Pos -> Maybe Int -> [Maybe Int]
-updateInRow sudoku pos newValue = (sudoku!!(fst pos)) !!= ((snd pos), newValue)
+updateInRow sud pos new = (sud!!(fst pos)) !!= ((snd pos), new)
 
 prop_Update :: Sudoku -> Pos -> Maybe Int -> Bool
-prop_Update sud pos newValue | ((fst pos) < 0) || ((fst pos) > 8) ||
-                               ((snd pos) < 0) || ((snd pos) > 8)
-                               = update sud pos newValue == sud
-                             | otherwise = ((rows (update sud pos newValue))!!
-                                           (fst pos))!!(snd pos) == newValue
+prop_Update sud pos new | ((fst pos) < 0) || ((fst pos) > 8) ||
+                          ((snd pos) < 0) || ((snd pos) > 8)
+                          = update sud pos new == sud
+                        | otherwise = ((rows (update sud pos new))!!
+                                      (fst pos))!!(snd pos) == new
 
 -- | determines which numbers could be legally written into the given position
 -- | in the given sudoku
 candidates :: Sudoku -> Pos -> [Int]
-candidates sudoku pos = catMaybes (listOfOkayNrs (findBlocks (rows sudoku) pos) maybeInts)
+candidates sud pos = catMaybes(listOfOkayNrs(findBlocks(rows sud)pos)maybeInts)
 
 -- | returns a list of Maybe Int candidates given a list of blocks and list of
 -- | Maybe Ints
@@ -223,17 +219,17 @@ listOfOkayNrs matrix (x:xs) = if all (\y -> isOkayBlock (y ++ [x])) matrix
 
 -- | returns a list of the blocks that the position is a part of
 findBlocks :: [[Maybe Int]] -> Pos -> [[Maybe Int]]
-findBlocks sudoku pos = [sudoku!!(fst pos)] ++
-                        [(transpose sudoku)!!(snd pos)] ++
-                        [find3x3Blocks sudoku pos]
+findBlocks sud pos = [sud!!(fst pos)] ++
+                     [(transpose sud)!!(snd pos)] ++
+                     [find3x3Blocks sud pos]
 
 -- | returns the 3x3-block that the position is a part of by checking where the
 -- | x-position is and calling find3x3BlocksHelp
 find3x3Blocks :: [[Maybe Int]] -> Pos -> [Maybe Int]
-find3x3Blocks sudoku pos | (fst pos) <=2 = find3x3BlocksHelp (take 3 sudoku) pos
-                         | ((fst pos) >=2) && ((fst pos) <= 5) =
-                           find3x3BlocksHelp (take 3 (drop 3 sudoku)) pos
-                         | otherwise = find3x3BlocksHelp ((drop 6 sudoku)) pos
+find3x3Blocks sud pos | (fst pos) <=2 = find3x3BlocksHelp (take 3 sud) pos
+                      | ((fst pos) >=2) && ((fst pos) <= 5) =
+                        find3x3BlocksHelp (take 3 (drop 3 sud)) pos
+                      | otherwise = find3x3BlocksHelp ((drop 6 sud)) pos
 
 -- | returns the 3x3-block that the position is a part of by checking where the
 -- | y-position is
@@ -284,10 +280,12 @@ isSameSud (x:xs) (y:ys) | y == Nothing = isSameSud xs ys
 
 prop_SolveSound :: Sudoku -> Property
 prop_SolveSound sud = isOkay sud && isSudoku sud ==>
-                      isSolved (fromJust (solve sud)) &&
-                      isSolutionOf (fromJust (solve sud)) sud &&
-                      isOkay (fromJust (solve sud)) &&
-                      isSudoku (fromJust (solve sud))
+                      isSolved solved &&
+                      isSolutionOf solved sud &&
+                      isOkay solved &&
+                      isSudoku solved
+                      where
+                        solved = fromJust (solve sud)
 
 -------------------------------------------------------------------------
 
