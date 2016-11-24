@@ -179,14 +179,20 @@ pairIndex list = zip list [0..8]
 
 -- | updates the given list with the new value at the given index
 (!!=) :: [a] -> (Int,a) -> [a]
-list !!= (index, element) = take index list ++ [element] ++ drop (index+1) list
+list !!= (index, element) | (index >= (length list)) || (index < 0) = list
+                          | otherwise = take index list ++ [element] ++ drop (index+1) list
 
-prop_change :: [a] -> (Int,a) -> Bool
-prop_change = undefined
+prop_Change :: [a] -> (Int,a) -> Bool
+prop_Change list (i, e) = i < 0 || i >= length list ||
+                          length (list !!= (i, e)) == length list
+
+-- && (list!!=(i,e))!!i ==e )
 
 -- | updates the given Sudoku at the given position with the new value
 update :: Sudoku -> Pos -> Maybe Int -> Sudoku
-update sudoku pos newValue = Sudoku ((rows sudoku) !!= ((fst pos),
+update sudoku pos newValue | ((fst pos) < 0) || ((fst pos) > 8) ||
+                             ((snd pos) < 0) || ((snd pos) > 8) = sudoku
+                           | otherwise = Sudoku ((rows sudoku) !!= ((fst pos),
                                     (updateInRow (rows sudoku) (pos) newValue)))
 
 -- | updates the given row at the given position with the new value
@@ -194,7 +200,11 @@ updateInRow :: [[Maybe Int]] -> Pos -> Maybe Int -> [Maybe Int]
 updateInRow sudoku pos newValue = (sudoku!!(fst pos)) !!= ((snd pos), newValue)
 
 prop_Update :: Sudoku -> Pos -> Maybe Int -> Bool
-prop_Update = undefined
+prop_Update sud pos newValue | ((fst pos) < 0) || ((fst pos) > 8) ||
+                               ((snd pos) < 0) || ((snd pos) > 8)
+                               = update sud pos newValue == sud
+                             | otherwise = ((rows (update sud pos newValue))!!
+                                           (fst pos))!!(snd pos) == newValue
 
 -- | determines which numbers could be legally written into the given position
 -- | in the given sudoku
@@ -273,7 +283,11 @@ isSameSud (x:xs) (y:ys) | y == Nothing = isSameSud xs ys
                         | otherwise = y == x && (isSameSud xs ys)
 
 prop_SolveSound :: Sudoku -> Property
-prop_SolveSound = undefined
+prop_SolveSound sud = isOkay sud && isSudoku sud ==>
+                      isSolved (fromJust (solve sud)) &&
+                      isSolutionOf (fromJust (solve sud)) sud &&
+                      isOkay (fromJust (solve sud)) &&
+                      isSudoku (fromJust (solve sud))
 
 -------------------------------------------------------------------------
 
@@ -293,20 +307,3 @@ example =
   where
     n = Nothing
     j = Just
-
-example2 :: Sudoku
-example2 =
-    Sudoku
-        [ [j 3,j 6,j 5,n  ,j 7,j 1,j 2,j 5,j 4]
-        , [j 5,j 5,j 5,j 5,j 5,j 5,j 1,j 8,n  ]
-        , [j 5,j 5,j 9,j 2,j 5,j 4,j 7,n  ,j 5]
-        , [n  ,j 5,j 5,j 5,j 1,j 3,j 5,j 2,j 8]
-        , [j 4,n  ,j 5,j 5,j 5,j 2,j 5,j 5,j 9]
-        , [j 2,j 7,n  ,j 4,j 6,j 5,j 5,j 5,j 5]
-        , [j 5,j 5,j 5,j 3,n  ,j 8,j 9,j 5,j 5]
-        , [j 5,j 8,j 3,j 5,j 5,n  ,j 5,j 6,j 5]
-        , [j 5,j 5,j 7,j 6,j 9,j 5,n  ,j 4,j 3]
-        ]
-      where
-        n = Nothing
-        j = Just
