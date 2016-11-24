@@ -178,11 +178,10 @@ pairIndex list = zip list [0..8]
 list !!= (i, e) | (i >= (length list)) || (i < 0) = list
                 | otherwise = take i list ++ [e] ++ drop (i+1) list
 
-prop_Change :: [a] -> (Int,a) -> Bool
+prop_Change :: Eq a => [a] -> (Int, a) -> Bool
 prop_Change list (i, e) = i < 0 || i >= length list ||
-                          length (list !!= (i, e)) == length list
-
--- && (list!!=(i,e))!!i ==e )
+                          (length (list !!= (i, e)) == length list
+                          && (list!!=(i,e))!!i == e)
 
 -- | updates the given Sudoku at the given position with the new value
 update :: Sudoku -> Pos -> Maybe Int -> Sudoku
