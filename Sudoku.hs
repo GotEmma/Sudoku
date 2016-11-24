@@ -24,21 +24,20 @@ allBlankSudoku = Sudoku (replicate 9 (replicate 9 Nothing))
 
 -- | checks if sudoku is really a valid representation of a sudoku puzzle
 isSudoku :: Sudoku -> Bool
-isSudoku sudoku = (length (rows sudoku) == 9) &&
-                  (all (\x -> length x == 9) (rows sudoku)) &&
-                  (areElementsValid sudoku)
+isSudoku sud = (length (rows sud) == 9) &&
+               (all (\x -> length x == 9) (rows sud)) &&
+               (areElementsValid sud)
 
 -- | help function for isSudoku. Checks if the elements are 1-9 or blank
 areElementsValid :: Sudoku -> Bool
-areElementsValid sudoku = all (\x -> ( all (\y -> (
-                          case y of
-                            Just n -> n `elem` [1..9]
-                            Nothing -> True )) (x) )) (rows sudoku)
+areElementsValid sud = all (\x -> ( all (\y -> (
+                        case y of
+                          Just n -> n `elem` [1..9]
+                          Nothing -> True )) (x) )) (rows sud)
 
 -- | checks if sud is already solved, i.e. there are no blanks
 isSolved :: Sudoku -> Bool
-isSolved sudoku = not (any (\x -> (
-                  any (\y -> y == Nothing) (x))) (rows sudoku))
+isSolved sud = not (any (\x -> (any (\y -> y == Nothing) (x))) (rows sud))
 
 -------------------------------------------------------------------------
 
@@ -95,7 +94,7 @@ instance Arbitrary Sudoku where
 
 -- | checks that sudoku is a sudoku
 prop_Sudoku :: Sudoku -> Bool
-prop_Sudoku sudoku = isSudoku sudoku
+prop_Sudoku sud = isSudoku sud
 
 -- | checks that the block does not contain duplicets of the same number
 isOkayBlock :: Block -> Bool
@@ -107,33 +106,36 @@ isOkayBlock (x:xs) = if (any (\y -> y == x)) xs && (not (x == Nothing))
 
 -- | divides the sudoku to a list of blocks
 blocks :: Sudoku -> [Block]
-blocks sudoku = concat [rows sudoku, transpose (rows sudoku),
-                        sudokuTo3x3Block (rows sudoku)]
+blocks sud = concat [rows sud, transpose (rows sud),
+                     sudokuTo3x3Block (rows sud)]
 
 -- | checks that for each Sudoku, there are 3*9 blocks,
 -- | and each block has exactly 9 cells
 prop_Blocks :: Sudoku -> Bool
-prop_Blocks sudoku = (all (\x -> (length x == 9)) (blocks sudoku)) &&
-                     (length (blocks sudoku) == 27)
+prop_Blocks sud = (all (\x -> (length x == 9)) (blocks sud)) &&
+                  (length (blocks sud) == 27)
 
 -- | sends all the lists in the list to maybeMatrixToBlock
 -- | and outputs a list of blocks
 sudokuTo3x3Block :: [[Maybe Int]] -> [Block]
-sudokuTo3x3Block sudoku = concat [maybeMatrixToBlock (take 3 sudoku),
-                          maybeMatrixToBlock (take 3 (drop 3 sudoku)),
-                          maybeMatrixToBlock (drop 6 sudoku)]
+sudokuTo3x3Block sud = concat [maybeMatrixToBlock (take 3 sud),
+                          maybeMatrixToBlock (take 3 (drop 3 sud)),
+                          maybeMatrixToBlock (drop 6 sud)]
 
 -- | takes the first three elements in every list and combines them to a block
 maybeMatrixToBlock :: [[Maybe Int]] -> [Block]
-maybeMatrixToBlock (x:y:z:a) = [concat [(take 3 x), (take 3 y), (take 3 z)],
-                                concat [(take 3 (drop 3 x)),
-                                        (take 3 (drop 3 y)),
-                                        (take 3 (drop 3 z))],
-                                concat [(drop 6 x), (drop 6 y), (drop 6 z)]]
+maybeMatrixToBlock (x:y:z:a) = [concat [(t 3 x), (t 3 y), (t 3 z)],
+                                concat [(t 3 (d 3 x)),
+                                        (t 3 (d 3 y)),
+                                        (t 3 (d 3 z))],
+                                concat [(d 6 x), (d 6 y), (d 6 z)]]
+                                where
+                                  t = take
+                                  d = drop
 
 -- | checks if every block in the input sudoku is okay
 isOkay :: Sudoku -> Bool
-isOkay sudoku = all (\x -> (isOkayBlock x)) (blocks sudoku)
+isOkay sud = all (\x -> (isOkayBlock x)) (blocks sud)
 
 -------------------------------------------------------------------------
 
@@ -186,9 +188,9 @@ prop_Change list (i, e) = i < 0 || i >= length list ||
 -- | updates the given Sudoku at the given position with the new value
 update :: Sudoku -> Pos -> Maybe Int -> Sudoku
 update sud pos new | ((fst pos) < 0) || ((fst pos) > 8) ||
-                          ((snd pos) < 0) || ((snd pos) > 8) = sud
-                        | otherwise = Sudoku ((rows sud) !!= ((fst pos),
-                                      (updateInRow (rows sud) (pos) new)))
+                     ((snd pos) < 0) || ((snd pos) > 8) = sud
+                   | otherwise = Sudoku ((rows sud) !!= ((fst pos),
+                                        (updateInRow (rows sud) (pos) new)))
 
 -- | updates the given row at the given position with the new value
 updateInRow :: [[Maybe Int]] -> Pos -> Maybe Int -> [Maybe Int]
@@ -234,13 +236,16 @@ find3x3Blocks sud pos | (fst pos) <=2 = find3x3BlocksHelp (take 3 sud) pos
 -- | y-position is
 find3x3BlocksHelp :: [[Maybe Int]] -> Pos -> [Maybe Int]
 find3x3BlocksHelp (x:y:z:a) pos  | (snd pos) <=2 =
-                                    concat [(take 3 x), (take 3 y), (take 3 z)]
+                                    concat [(t 3 x), (t 3 y), (t 3 z)]
                                  | ((snd pos) >=2) && ((snd pos) <= 5) =
-                                    concat [(take 3 (drop 3 x)),
-                                            (take 3 (drop 3 y)),
-                                            (take 3 (drop 3 z))]
+                                    concat [(t 3 (d 3 x)),
+                                            (t 3 (d 3 y)),
+                                            (t 3 (d 3 z))]
                                  | otherwise =
-                                   concat [(drop 6 x), (drop 6 y), (drop 6 z)]
+                                   concat [(d 6 x), (d 6 y), (d 6 z)]
+                                   where
+                                     t = take
+                                     d = drop
 
 -- | returns a solved Maybe Sudoku, Nothing if it can't be solved.
 -- | checks that the input sudoku is valid
