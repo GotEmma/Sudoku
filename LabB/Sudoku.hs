@@ -13,8 +13,7 @@ data Sudoku = Sudoku { rows :: [[Maybe Int]] }
 type Pos = (Int,Int)
 type Block = [Maybe Int]
 
-maybeInts = [Just 1, Just 2, Just 3, Just 4, Just 5,
-             Just 6, Just 7, Just 8, Just 9]
+maybeInts = [(Just n) | n <- [1..9]]
 
 -------------------------------------------------------------------------
 
@@ -93,11 +92,11 @@ prop_Blocks sud = (all (\x -> (length x == 9)) (blocks sud)) &&
 -- | divides the sudoku to a list of blocks
 blocks :: Sudoku -> [Block]
 blocks sud = rows sud ++ transpose (rows sud) ++ squareBlocks
-              where squareBlocks = [sudokuTo3x3Block (rows sud) (x,y)
+              where squareBlocks = [get3x3Block (rows sud) (x,y)
                       | x <- [0..2], y <- [0..2]]
 
-sudokuTo3x3Block :: [[Maybe Int]] -> (Int, Int) -> [Maybe Int]
-sudokuTo3x3Block rows (x,y) = concat (map (take 3) (map (drop (3*x))
+get3x3Block :: [[Maybe Int]] -> (Int, Int) -> [Maybe Int]
+get3x3Block rows (x,y) = concat (map (take 3) (map (drop (3*x))
                                      (take 3 (drop (3*y) rows))))
 
 -- | checks if every block in the input sudoku is okay
@@ -109,41 +108,33 @@ isOkay sud = all (\x -> (isOkayBlock x)) (blocks sud)
 -- | returns a list of the positions in the given Sudoku that are blank by
 -- | zipping the x-positions with the y-positions
 blanks :: Sudoku -> [Pos]
-blanks sud = zip (amountInRows (listOfNrOfBlanks (rows sud)))
-                 (isBlank(sudokuToPairIndexList (rows sud)))
+blanks sud = zip (yPos (rowBlanks (rows sud)))
+                 (whereBlank (xValuePos (rows sud)))
 
 -- | returns a list of all the blanks y-positions
-amountInRows :: [Int] -> [Int]
-amountInRows list = concat ([(replicate (list!!i) i) | i <- [0..8]])
+yPos :: [Int] -> [Int]
+yPos list = concat ([(replicate (list!!i) i) | i <- [0..8]])
 
 -- | returns a list of the number of blanks from all the rows
-listOfNrOfBlanks :: [[Maybe Int]] -> [Int]
-listOfNrOfBlanks (x:[]) = [nrOfBlanks x]
-listOfNrOfBlanks (x:xs) = [nrOfBlanks x] ++ listOfNrOfBlanks xs
-
--- | returns the number of blanks in a row
-nrOfBlanks :: [Maybe Int] -> Int
-nrOfBlanks list = length (isBlank(pairIndex list))
+rowBlanks :: [[Maybe Int]] -> [Int]
+rowBlanks (x:[]) = [length (whereBlank (zip x [0..8]))]
+rowBlanks (x:xs) = [length (whereBlank (zip x [0..8]))] ++ rowBlanks xs
 
 -- | creates a total list of pairs containing a Maybe Int and the x position
-sudokuToPairIndexList :: [[Maybe Int]] -> [(Maybe Int, Int)]
-sudokuToPairIndexList (x:[]) = pairIndex x
-sudokuToPairIndexList (x:xs) = pairIndex x ++ sudokuToPairIndexList xs
+xValuePos :: [[Maybe Int]] -> [(Maybe Int, Int)]
+xValuePos (x:[]) = zip x [0..8]
+xValuePos (x:xs) = zip x [0..8] ++ xValuePos xs
 
 -- | takes a list of pairs (Maybe Int and pos) and returns a list of the pos
 -- | of the Maybe Ints that are empty (Nothing)
-isBlank :: [(Maybe Int, Int)] -> [Int]
-isBlank (x:[]) = if (fst x) == Nothing then [(snd x)]
-                 else []
-isBlank (x:xs) = if (fst x) == Nothing then [(snd x)] ++ isBlank xs
-                 else isBlank xs
-
--- | returns list of pairs containing a Maybe Int and the x or y position
-pairIndex :: [Maybe Int] -> [(Maybe Int, Int)]
-pairIndex list = zip list [0..8]
+whereBlank :: [(Maybe Int, Int)] -> [Int]
+whereBlank (x:[]) = if (fst x) == Nothing then [(snd x)]
+                    else []
+whereBlank (x:xs) = if (fst x) == Nothing then [(snd x)] ++ whereBlank xs
+                    else whereBlank xs
 
 -- | updates the given list with the new value at the given index
-(!!=) :: [a] -> (Int,a) -> [a]
+(!!=) :: [a] -> (Int, a) -> [a]
 list !!= (i, e) | (i >= (length list)) || (i < 0) = list
                 | otherwise = take i list ++ [e] ++ drop (i+1) list
 
@@ -154,65 +145,44 @@ prop_Change list (i, e) = i < 0 || i >= length list ||
 
 -- | updates the given Sudoku at the given position with the new value
 update :: Sudoku -> Pos -> Maybe Int -> Sudoku
-update sud pos new | ((fst pos) < 0) || ((fst pos) > 8) ||
-                     ((snd pos) < 0) || ((snd pos) > 8) = sud
-                   | otherwise = Sudoku ((rows sud) !!= ((fst pos),
-                                        (updateInRow (rows sud) (pos) new)))
+update sud (x,y) new | x < 0 || x > 8 || y < 0 || y > 8 = sud
+                     | otherwise = Sudoku ((rows sud) !!=
+                       (x,(updateInRow (rows sud) (x,y) new)))
 
 -- | updates the given row at the given position with the new value
 updateInRow :: [[Maybe Int]] -> Pos -> Maybe Int -> [Maybe Int]
 updateInRow sud pos new = (sud!!(fst pos)) !!= ((snd pos), new)
 
 prop_Update :: Sudoku -> Pos -> Maybe Int -> Bool
-prop_Update sud pos new | ((fst pos) < 0) || ((fst pos) > 8) ||
-                          ((snd pos) < 0) || ((snd pos) > 8)
-                          = update sud pos new == sud
-                        | otherwise = ((rows (update sud pos new))!!
-                                      (fst pos))!!(snd pos) == new
+prop_Update sud (x,y) new | x < 0 || x > 8 || y < 0 || y > 8
+                            = update sud (x,y) new == sud
+                          | otherwise
+                            = ((rows (update sud (x,y) new))!!x)!!y == new
 
 -- | determines which numbers could be legally written into the given position
 -- | in the given sudoku
 candidates :: Sudoku -> Pos -> [Int]
-candidates sud pos = catMaybes(listOfOkayNrs(findBlocks(rows sud)pos)maybeInts)
+candidates sud pos = catMaybes(okayNrs(findBlocks(rows sud)pos)maybeInts)
 
 -- | returns a list of Maybe Int candidates given a list of blocks and list of
 -- | Maybe Ints
-listOfOkayNrs :: [[Maybe Int]] -> [Maybe Int] -> [Maybe Int]
-listOfOkayNrs matrix (x:[]) = if all (\y -> isOkayBlock (y ++ [x])) matrix
-                              then [x]
-                              else []
-listOfOkayNrs matrix (x:xs) = if all (\y -> isOkayBlock (y ++ [x])) matrix
-                              then [x] ++ listOfOkayNrs matrix xs
-                              else [] ++ listOfOkayNrs matrix xs
+okayNrs :: [[Maybe Int]] -> [Maybe Int] -> [Maybe Int]
+okayNrs matrix (x:[]) = if all (\y -> isOkayBlock (y ++ [x])) matrix
+                        then [x] else []
+okayNrs matrix (x:xs) = if all (\y -> isOkayBlock (y ++ [x])) matrix
+                        then [x] ++ okayNrs matrix xs
+                        else [] ++ okayNrs matrix xs
 
 -- | returns a list of the blocks that the position is a part of
 findBlocks :: [[Maybe Int]] -> Pos -> [[Maybe Int]]
-findBlocks sud pos = [sud!!(fst pos)] ++
-                     [(transpose sud)!!(snd pos)] ++
-                     [find3x3Blocks sud pos]
+findBlocks sud (x,y) = [sud!!x] ++
+                       [(transpose sud)!!y] ++
+                       [find3x3 sud (x,y)]
 
 -- | returns the 3x3-block that the position is a part of by checking where the
 -- | x-position is and calling find3x3BlocksHelp
-find3x3Blocks :: [[Maybe Int]] -> Pos -> [Maybe Int]
-find3x3Blocks sud pos | (fst pos) <=2 = find3x3BlocksHelp (take 3 sud) pos
-                      | ((fst pos) >=2) && ((fst pos) <= 5) =
-                        find3x3BlocksHelp (take 3 (drop 3 sud)) pos
-                      | otherwise = find3x3BlocksHelp ((drop 6 sud)) pos
-
--- | returns the 3x3-block that the position is a part of by checking where the
--- | y-position is
-find3x3BlocksHelp :: [[Maybe Int]] -> Pos -> [Maybe Int]
-find3x3BlocksHelp (x:y:z:a) pos  | (snd pos) <=2 =
-                                    concat [(t 3 x), (t 3 y), (t 3 z)]
-                                 | ((snd pos) >=2) && ((snd pos) <= 5) =
-                                    concat [(t 3 (d 3 x)),
-                                            (t 3 (d 3 y)),
-                                            (t 3 (d 3 z))]
-                                 | otherwise =
-                                   concat [(d 6 x), (d 6 y), (d 6 z)]
-                                   where
-                                     t = take
-                                     d = drop
+find3x3 :: [[Maybe Int]] -> Pos -> [Maybe Int]
+find3x3 sud (x,y) = get3x3Block sud ((y `quot` 3),(x `quot` 3))
 
 -- | returns a solved Maybe Sudoku, Nothing if it can't be solved.
 -- | checks that the input sudoku is valid
