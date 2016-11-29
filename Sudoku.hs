@@ -26,14 +26,10 @@ allBlankSudoku = Sudoku (replicate 9 (replicate 9 Nothing))
 isSudoku :: Sudoku -> Bool
 isSudoku sud = (length (rows sud) == 9) &&
                (all (\x -> length x == 9) (rows sud)) &&
-               (areElementsValid sud)
-
--- | help function for isSudoku. Checks if the elements are 1-9 or blank
-areElementsValid :: Sudoku -> Bool
-areElementsValid sud = all (\x -> ( all (\y -> (
-                        case y of
-                          Just n -> n `elem` [1..9]
-                          Nothing -> True )) (x) )) (rows sud)
+               (all (\x -> ( all (\y -> (
+                  case y of
+                    Just n -> n `elem` [1..9]
+                    Nothing -> True )) (x) )) (rows sud))
 
 -- | checks if sud is already solved, i.e. there are no blanks
 isSolved :: Sudoku -> Bool
@@ -43,15 +39,7 @@ isSolved sud = not (any (\x -> (any (\y -> y == Nothing) (x))) (rows sud))
 
 -- | prints a representation of the sudoku sud on the screen
 printSudoku :: Sudoku -> IO ()
-printSudoku sud = putStrLn (maybeMatrixToString (rows sud))
-
--- | converts the matrix of maybe ints to a matrix of chars
-maybeMatrixToString :: [[Maybe Int]] -> String
-maybeMatrixToString matrix = unlines (map maybeListToString matrix)
-
--- | converts the list of maybe ints to a list of chars
-maybeListToString :: [Maybe Int] -> String
-maybeListToString list = map maybeToChar list
+printSudoku sud = putStrLn (unlines (map (map maybeToChar) (rows sud)))
 
 -- | converts maybe int to char
 maybeToChar :: Maybe Int -> Char
@@ -63,22 +51,15 @@ maybeToChar Nothing = '.'
 readSudoku :: FilePath -> IO Sudoku
 readSudoku file = do
                     contents <- readFile file
-                    if isSudoku (Sudoku (stringListToMatrix (lines contents)))
-                    then return (Sudoku (stringListToMatrix (lines contents)))
+                    let sud = Sudoku (map (map charToMaybe) (lines contents))
+                    if isSudoku sud
+                    then return sud
                     else error "File does not contain a Sudoku"
 
 -- | converts char to maybe int
 charToMaybe :: Char -> Maybe Int
 charToMaybe '.' = Nothing
 charToMaybe c = Just (ord c - ord '0')
-
--- | converts the matrix of chars to a matrix of maybe ints
-stringListToMatrix :: [String] -> [[Maybe Int]]
-stringListToMatrix charMatrix = map stringToList charMatrix
-
--- | converts the list of chars to a list of maybe ints
-stringToList :: String -> [Maybe Int]
-stringToList string = map charToMaybe string
 
 -------------------------------------------------------------------------
 
@@ -99,15 +80,9 @@ prop_Sudoku sud = isSudoku sud
 -- | checks that the block does not contain duplicets of the same number
 isOkayBlock :: Block -> Bool
 isOkayBlock [] = True
-isOkayBlock (x:[]) = True
-isOkayBlock (x:xs) = if (any (\y -> y == x)) xs && (not (x == Nothing))
+isOkayBlock (x:xs) = if (any (\y -> y == x)) xs && (x /= Nothing)
                      then False
                      else isOkayBlock xs
-
--- | divides the sudoku to a list of blocks
-blocks :: Sudoku -> [Block]
-blocks sud = concat [rows sud, transpose (rows sud),
-                     sudokuTo3x3Block (rows sud)]
 
 -- | checks that for each Sudoku, there are 3*9 blocks,
 -- | and each block has exactly 9 cells
@@ -115,23 +90,15 @@ prop_Blocks :: Sudoku -> Bool
 prop_Blocks sud = (all (\x -> (length x == 9)) (blocks sud)) &&
                   (length (blocks sud) == 27)
 
--- | sends all the lists in the list to maybeMatrixToBlock
--- | and outputs a list of blocks
-sudokuTo3x3Block :: [[Maybe Int]] -> [Block]
-sudokuTo3x3Block sud = concat [maybeMatrixToBlock (take 3 sud),
-                          maybeMatrixToBlock (take 3 (drop 3 sud)),
-                          maybeMatrixToBlock (drop 6 sud)]
+-- | divides the sudoku to a list of blocks
+blocks :: Sudoku -> [Block]
+blocks sud = rows sud ++ transpose (rows sud) ++ squareBlocks
+              where squareBlocks = [sudokuTo3x3Block (rows sud) (x,y)
+                      | x <- [0..2], y <- [0..2]]
 
--- | takes the first three elements in every list and combines them to a block
-maybeMatrixToBlock :: [[Maybe Int]] -> [Block]
-maybeMatrixToBlock (x:y:z:a) = [concat [(t 3 x), (t 3 y), (t 3 z)],
-                                concat [(t 3 (d 3 x)),
-                                        (t 3 (d 3 y)),
-                                        (t 3 (d 3 z))],
-                                concat [(d 6 x), (d 6 y), (d 6 z)]]
-                                where
-                                  t = take
-                                  d = drop
+sudokuTo3x3Block :: [[Maybe Int]] -> (Int, Int) -> [Maybe Int]
+sudokuTo3x3Block rows (x,y) = concat (map (take 3) (map (drop (3*x))
+                                     (take 3 (drop (3*y) rows))))
 
 -- | checks if every block in the input sudoku is okay
 isOkay :: Sudoku -> Bool
