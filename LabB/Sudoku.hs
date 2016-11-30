@@ -13,8 +13,6 @@ data Sudoku = Sudoku { rows :: [[Maybe Int]] }
 type Pos = (Int,Int)
 type Block = [Maybe Int]
 
-maybeInts = [(Just n) | n <- [1..9]]
-
 -------------------------------------------------------------------------
 
 -- | generates a sudoku with just blanks.
@@ -64,7 +62,8 @@ charToMaybe c = Just (ord c - ord '0')
 
 -- | generates an arbitrary cell in a Sudoku
 cell :: Gen (Maybe Int)
-cell = frequency [(9, return Nothing), (1, do elements maybeInts)]
+cell = frequency [(9, return Nothing),
+                  (1, do elements [(Just n) | n <- [1..9]])]
 
 -- | an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
@@ -96,8 +95,8 @@ blocks sud = rows sud ++ transpose (rows sud) ++ squareBlocks
                       | x <- [0..2], y <- [0..2]]
 
 get3x3Block :: [[Maybe Int]] -> (Int, Int) -> [Maybe Int]
-get3x3Block rows (x,y) = concat (map (take 3) (map (drop (3*x))
-                                     (take 3 (drop (3*y) rows))))
+get3x3Block rows (x,y) = concat (map (take 3) (map (drop (3*y))
+                                     (take 3 (drop (3*x) rows))))
 
 -- | checks if every block in the input sudoku is okay
 isOkay :: Sudoku -> Bool
@@ -162,7 +161,8 @@ prop_Update sud (x,y) new | x < 0 || x > 8 || y < 0 || y > 8
 -- | determines which numbers could be legally written into the given position
 -- | in the given sudoku
 candidates :: Sudoku -> Pos -> [Int]
-candidates sud pos = catMaybes(okayNrs(findBlocks(rows sud)pos)maybeInts)
+candidates sud pos = catMaybes (okayNrs (findBlocks (rows sud) pos)
+                     [(Just n) | n <- [1..9]])
 
 -- | returns a list of Maybe Int candidates given a list of blocks and list of
 -- | Maybe Ints
@@ -177,12 +177,7 @@ okayNrs matrix (x:xs) = if all (\y -> isOkayBlock (y ++ [x])) matrix
 findBlocks :: [[Maybe Int]] -> Pos -> [[Maybe Int]]
 findBlocks sud (x,y) = [sud!!x] ++
                        [(transpose sud)!!y] ++
-                       [find3x3 sud (x,y)]
-
--- | returns the 3x3-block that the position is a part of by checking where the
--- | x-position is and calling find3x3BlocksHelp
-find3x3 :: [[Maybe Int]] -> Pos -> [Maybe Int]
-find3x3 sud (x,y) = get3x3Block sud ((y `quot` 3),(x `quot` 3))
+                       [get3x3Block sud ((x `quot` 3),(y `quot` 3))]
 
 -- | returns a solved Maybe Sudoku, Nothing if it can't be solved.
 -- | checks that the input sudoku is valid
@@ -210,14 +205,14 @@ readAndSolve file = do
 -- | checks that the first sudoku is solved and valid
 isSolutionOf :: Sudoku -> Sudoku -> Bool
 isSolutionOf solved unsolved = (isOkay solved) && (isSolved solved) &&
-                               (isSameSud (concat (rows solved))
-                                          (concat (rows unsolved)))
+                               (isSolutionOf' (concat (rows solved))
+                                              (concat (rows unsolved)))
 
 -- | checks if the first sudoku is the solved version of the second sudoku
-isSameSud :: [Maybe Int] -> [Maybe Int] -> Bool
-isSameSud (x:[]) (y:[]) = (y == x) || (y == Nothing)
-isSameSud (x:xs) (y:ys) | y == Nothing = isSameSud xs ys
-                        | otherwise = y == x && (isSameSud xs ys)
+isSolutionOf' :: [Maybe Int] -> [Maybe Int] -> Bool
+isSolutionOf' (x:[]) (y:[]) = (y == x) || (y == Nothing)
+isSolutionOf' (x:xs) (y:ys) | y == Nothing = isSolutionOf' xs ys
+                            | otherwise = y == x && (isSolutionOf' xs ys)
 
 prop_SolveSound :: Sudoku -> Property
 prop_SolveSound sud = isOkay sud && isSudoku sud ==>

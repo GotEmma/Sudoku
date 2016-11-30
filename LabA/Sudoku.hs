@@ -13,9 +13,6 @@ data Sudoku = Sudoku { rows :: [[Maybe Int]] }
 type Pos = (Int,Int)
 type Block = [Maybe Int]
 
-maybeInts = [Just 1, Just 2, Just 3, Just 4, Just 5,
-             Just 6, Just 7, Just 8, Just 9]
-
 -------------------------------------------------------------------------
 
 -- | generates a sudoku with just blanks.
@@ -65,7 +62,8 @@ charToMaybe c = Just (ord c - ord '0')
 
 -- | generates an arbitrary cell in a Sudoku
 cell :: Gen (Maybe Int)
-cell = frequency [(9, return Nothing), (1, do elements maybeInts)]
+cell = frequency [(9, return Nothing),
+                  (1, do elements [(Just n) | n <- [1..9]])]
 
 -- | an instance for generating Arbitrary Sudokus
 instance Arbitrary Sudoku where
@@ -93,13 +91,12 @@ prop_Blocks sud = (all (\x -> (length x == 9)) (blocks sud)) &&
 -- | divides the sudoku to a list of blocks
 blocks :: Sudoku -> [Block]
 blocks sud = rows sud ++ transpose (rows sud) ++ squareBlocks
-              where squareBlocks = [sudokuTo3x3Block (rows sud) (x,y)
+              where squareBlocks = [get3x3Block (rows sud) (x,y)
                       | x <- [0..2], y <- [0..2]]
 
--- | returns a 3x3 block using the coordinates provided
-sudokuTo3x3Block :: [[Maybe Int]] -> (Int, Int) -> [Maybe Int]
-sudokuTo3x3Block rows (x,y) = concat (map (take 3) (map (drop (3*x))
-                                     (take 3 (drop (3*y) rows))))
+get3x3Block :: [[Maybe Int]] -> (Int, Int) -> [Maybe Int]
+get3x3Block rows (x,y) = concat (map (take 3) (map (drop (3*y))
+                                     (take 3 (drop (3*x) rows))))
 
 -- | checks if every block in the input sudoku is okay
 isOkay :: Sudoku -> Bool
