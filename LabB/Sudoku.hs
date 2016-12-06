@@ -107,26 +107,14 @@ isOkay sud = all (\x -> (isOkayBlock x)) (blocks sud)
 -- | returns a list of the positions in the given Sudoku that are blank by
 -- | zipping the x-positions with the y-positions
 blanks :: Sudoku -> [Pos]
-blanks sud = zip (yPos (rowBlanks (rows sud)))
-                 (whereBlank (xValuePos (rows sud)))
-
--- | returns a list of all the blanks y-positions
-yPos :: [Int] -> [Int]
-yPos list = concat ([(replicate (list!!i) i) | i <- [0..8]])
-
--- | returns a list of the number of blanks from all the rows
-rowBlanks :: [[Maybe Int]] -> [Int]
-rowBlanks (x:[]) = [length (whereBlank (zip x [0..8]))]
-rowBlanks (x:xs) = [length (whereBlank (zip x [0..8]))] ++ rowBlanks xs
-
--- | creates a total list of pairs containing a Maybe Int and the x position
-xValuePos :: [[Maybe Int]] -> [(Maybe Int, Int)]
-xValuePos (x:[]) = zip x [0..8]
-xValuePos (x:xs) = zip x [0..8] ++ xValuePos xs
+blanks sud = whereBlank (zip cells pos)
+             where
+               cells = concat (rows sud)
+               pos = [(x, y) | x <- [0..8], y <- [0..8]]
 
 -- | takes a list of pairs (Maybe Int and pos) and returns a list of the pos
 -- | of the Maybe Ints that are empty (Nothing)
-whereBlank :: [(Maybe Int, Int)] -> [Int]
+whereBlank :: [(Maybe Int, Pos)] -> [Pos]
 whereBlank (x:[]) = if (fst x) == Nothing then [(snd x)]
                     else []
 whereBlank (x:xs) = if (fst x) == Nothing then [(snd x)] ++ whereBlank xs
@@ -138,7 +126,7 @@ prop_Blanks sud = prop_Blanks' sud (blanks sud)
 prop_Blanks' :: Sudoku -> [Pos] -> Bool
 prop_Blanks' sud [] = True
 prop_Blanks' sud ((x, y):xs) = if ((rows sud)!!x)!!y /= Nothing then False
-                              else prop_Blanks' sud xs
+                               else prop_Blanks' sud xs
 
 -- | updates the given list with the new value at the given index
 (!!=) :: [a] -> (Int, a) -> [a]
