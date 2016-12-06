@@ -132,6 +132,14 @@ whereBlank (x:[]) = if (fst x) == Nothing then [(snd x)]
 whereBlank (x:xs) = if (fst x) == Nothing then [(snd x)] ++ whereBlank xs
                     else whereBlank xs
 
+prop_Blanks :: Sudoku -> Bool
+prop_Blanks sud = prop_Blanks' sud (blanks sud)
+
+prop_Blanks' :: Sudoku -> [Pos] -> Bool
+prop_Blanks' sud [] = True
+prop_Blanks' sud ((x, y):xs) = if ((rows sud)!!x)!!y /= Nothing then False
+                              else prop_Blanks' sud xs
+
 -- | updates the given list with the new value at the given index
 (!!=) :: [a] -> (Int, a) -> [a]
 list !!= (i, e) | (i >= (length list)) || (i < 0) = list
